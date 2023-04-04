@@ -87,8 +87,6 @@ Joe Biden: `
                     }
                 }
             })
-            response = ""
-            return;
         }
     })
 })
