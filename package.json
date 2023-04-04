@@ -1,0 +1,19 @@
+{
+  "type": "module",
+  "name": "joe-biden",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dalai": "^0.3.1",
+    "discord.js-12": "^1.0.2",
+    "dotenv": "^16.0.3",
+    "socket.io": "^4.6.1",
+    "socketio": "^1.0.0"
+  }
+}
