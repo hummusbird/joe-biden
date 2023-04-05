@@ -3,12 +3,10 @@ const require = createRequire(import.meta.url);
 
 import { io } from "socket.io-client";
 
-let { Client: DiscordClient, Message, MessageEmbed, MessageAttachment } = require('discord.js-12'),
+let { Client: DiscordClient, MessageManager, Message, MessageEmbed, MessageAttachment } = require('discord.js-12'),
     { config: loadEnv } = require('dotenv')
 
 loadEnv()
-
-const socket = io("ws://localhost:3000");
 
 const config = {
     bot_uid: 951476676603310100,    // place your bot UID here.
@@ -58,14 +56,15 @@ await client.on('message', async message => {
         prompt: generatePrompt(message)
     }
 
+    var socket = io("ws://localhost:3000");
+
+    message.channel.startTyping();
     socket.emit("request", request);
 
     var response = "";
     var fullresponse = ""
 
     socket.on("result", result => {
-        var i = 0;
-
         response += result.response;
         fullresponse += result.response;
 
@@ -87,6 +86,8 @@ await client.on('message', async message => {
                 console.log("\n\x1b[44m// RESPONSE //\x1b[0m")
                 console.log(response)
                 console.log("\x1b[44m// END OF RESPONSE //\x1b[0m\n")
+                message.channel.stopTyping()
+                socket.disconnect()
             })
         }
     })
@@ -94,10 +95,13 @@ await client.on('message', async message => {
 
 function generatePrompt(message) {
 
+    var userinput = message.content.trim()
+    userinput = message.content.replace(`<@${config.bot_uid}>`, "")
+
     var input = `You are the President of the United States, Joe Biden.
 You must reply in-character, to any questions asked by your Citizens.
 Refer to your Citizens by name.
-${message.author.username}: ${message.content.replace(`<@${config.bot_uid}>`, "").trim()}
+${message.author.username}: ${userinput}
 Joe Biden: `
 
     console.log("\x1b[41m// PROMPT GENERATED //\x1b[0m")
