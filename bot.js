@@ -62,10 +62,6 @@ await client.on('message', async message => {
 
     var response = "";
     var fullresponse = ""
-    var result = ""
-
-    delay(500);
-    socket.emit("stop")
 
     socket.on("result", result => {
         var i = 0;
