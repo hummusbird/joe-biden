@@ -6,14 +6,14 @@ A discord bot dalai API (for entertainment purpouses.)
 
 - reply depth
 
-- typing indicator
-
 - date input
 
 - more config options
 
 - fix emit stop
 
-- length check & strip correctly
+- socket lock
+
+- image gen
 
 - username injection
