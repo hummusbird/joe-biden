@@ -41,7 +41,7 @@ await client.on('message', async message => {
 
     if (user == undefined || user.id != config.bot_uid) { return; }
 
-    console.log("\x1b[42mBot mentioned - Generating prompt...\x1b[0m\n")
+    console.log("\x1b[32mBot mentioned - Generating prompt...\x1b[0m\n")
 
     var request = {
         seed: -1,
@@ -54,19 +54,21 @@ await client.on('message', async message => {
         repeat_penalty: 1.1,
         debug: false,
         models: ["llama.13B"],
-        model: "llama.13B",
+        model: "alpaca.7B",
         prompt: generatePrompt(message)
     }
 
     socket.emit("request", request);
 
     var response = "";
+    var fullresponse = ""
     var result = ""
 
     socket.on("result", result => {
         var i = 0;
 
         response += result.response;
+        fullresponse += result.response;
 
         if (response.endsWith("<end>")) {
             socket.emit("stop");
@@ -84,9 +86,9 @@ await client.on('message', async message => {
                     }
                 }
             }).then(() => {
-                console.log("// RESPONSE //")
-                console.log(response)
-                console.log("// END OF RESPONSE //")
+                console.log("\x1b[44m\n// RESPONSE //\x1b[0m\n")
+                console.log(fullresponse)
+                console.log("\x1b[44m// END OF RESPONSE //\x1b[0m\n")
             })
         }
     })
