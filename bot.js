@@ -13,7 +13,8 @@ const socket = io("ws://localhost:3000");
 const config = {
     bot_uid: 951476676603310100,    // place your bot UID here.
     supply_date: false,             // whether the prompt supplies the date & time
-    reply_depth: 3                  // how many replies deep to add to the prompt.
+    reply_depth: 3,                 // how many replies deep to add to the prompt.
+    model: "llama.13B"              // which AI model to use
 }
 
 let client = new DiscordClient();
@@ -53,7 +54,7 @@ await client.on('message', async message => {
         repeat_last_n: 64,
         repeat_penalty: 1.1,
         debug: false,
-        models: ["alpaca.7B"],
+        models: [config.model],
         prompt: generatePrompt(message)
     }
 
