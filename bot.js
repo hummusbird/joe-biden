@@ -14,7 +14,7 @@ const config = {
     bot_uid: 951476676603310100,    // place your bot UID here.
     supply_date: false,             // whether the prompt supplies the date & time
     reply_depth: 3,                 // how many replies deep to add to the prompt.
-    model: "llama.13B"              // which AI model to use
+    model: "alpaca.7B"              // which AI model to use
 }
 
 let client = new DiscordClient();
