@@ -10,6 +10,12 @@ loadEnv()
 
 const socket = io("ws://localhost:3000");
 
+const config = {
+    bot_uid: 951476676603310100,    // place your bot UID here.
+    supply_date: false,             // whether the prompt supplies the date & time
+    reply_depth: 3                  // how many replies deep to add to the prompt.
+}
+
 let client = new DiscordClient();
 let delay = ms => new Promise(res => setTimeout(res, ms));
 
@@ -33,15 +39,9 @@ await client.on('message', async message => {
 
     var user = message.mentions.users.first()
 
-    if (user == undefined || user.id != 951476676603310100) { return; }
+    if (user == undefined || user.id != config.bot_uid) { return; }
 
-    console.log("bot mentioned")
-
-    var input = `You are the President of the United States, Joe Biden.
-You must reply in-character, to any questions asked by your Citizens.
-Refer to your Citizens by name.
-${message.author.username}: ${message.content.replace("<@951476676603310100>", "").trim()}
-Joe Biden: `
+    console.log("Bot mentioned - Generating prompt...\n")
 
     var request = {
         seed: -1,
@@ -55,7 +55,7 @@ Joe Biden: `
         debug: false,
         models: ["alpaca.7B", "llama.13B"],
         model: "llama.13B",
-        prompt: input
+        prompt: generatePrompt(message)
     }
 
     socket.emit("request", request);
@@ -66,10 +66,7 @@ Joe Biden: `
     socket.on("result", result => {
         var i = 0;
 
-        while (i < 1) {
-            response += result.response;
-            i++;
-        }
+        response += result.response;
 
         if (response.endsWith("<end>")) {
             socket.emit("stop");
@@ -90,6 +87,21 @@ Joe Biden: `
         }
     })
 })
+
+function generatePrompt(message) {
+
+    var input = `You are the President of the United States, Joe Biden.
+You must reply in-character, to any questions asked by your Citizens.
+Refer to your Citizens by name.
+${message.author.username}: ${message.content.replace(`<@${config.bot_uid}>`, "").trim()}
+Joe Biden: `
+
+    console.log("\x1b[41m// PROMPT GENERATED //\x1b[0m")
+    console.log(input)
+    console.log("\x1b[41m// END OF PROMPT //\x1b[0m")
+
+    return input;
+}
 
 let [arg] = process.argv.slice(2);
 let token = process.env.BOT_TOKEN;
