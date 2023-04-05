@@ -53,8 +53,7 @@ await client.on('message', async message => {
         repeat_last_n: 64,
         repeat_penalty: 1.1,
         debug: false,
-        models: ["llama.13B"],
-        model: "alpaca.7B",
+        models: ["alpaca.7B"],
         prompt: generatePrompt(message)
     }
 
