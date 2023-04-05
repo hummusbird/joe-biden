@@ -2,7 +2,7 @@ import { read } from 'fs';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
-var lock = false;
+var lock = false; // lock input until LLM is finished, stops crosstalk.
 
 import { io } from "socket.io-client";
 
@@ -39,13 +39,13 @@ client.on('guildDelete', async guild => {
 await client.on('message', async message => {
     if (!message.guild || message.author.bot || lock) return;
 
-    var user = message.mentions.users.first()
+    var user = message.mentions.users.first() // get mentioned users
 
-    if (user == undefined || user.id != config.bot_uid) { return; }
+    if (user == undefined || user.id != config.bot_uid) { return; } // return if bot isn't mentioned - works for reply and ping
 
     console.log("\x1b[32mBot mentioned - Generating prompt...\x1b[0m\n")
 
-    lock = true
+    lock = true // lock input until LLM has returned
 
     var request = {
         seed: -1,
@@ -61,7 +61,7 @@ await client.on('message', async message => {
         prompt: generatePrompt(message)
     }
 
-    var socket = io("ws://127.0.0.1:3000");
+    var socket = io("ws://127.0.0.1:3000"); // connect to LLM
 
     message.channel.startTyping();
     socket.emit("request", request);
