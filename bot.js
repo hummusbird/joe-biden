@@ -73,7 +73,7 @@ await client.on('message', async message => {
             socket.emit("stop");
 
             response = response.replace("<end>", "").trim()
-            response = response.substring(request.prompt.length + 4, response.length)
+            response = response.replace(request.prompt, "").trim()
 
             client.api.channels[message.channel.id].messages.post({
                 data: {
@@ -86,7 +86,7 @@ await client.on('message', async message => {
                 }
             }).then(() => {
                 console.log("\x1b[44m\n// RESPONSE //\x1b[0m\n")
-                console.log(fullresponse)
+                console.log(response)
                 console.log("\x1b[44m// END OF RESPONSE //\x1b[0m\n")
             })
         }
