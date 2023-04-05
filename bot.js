@@ -1,5 +1,8 @@
+import { read } from 'fs';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
+
+var lock = false;
 
 import { io } from "socket.io-client";
 
@@ -34,13 +37,15 @@ client.on('guildDelete', async guild => {
 })
 
 await client.on('message', async message => {
-    if (!message.guild || message.author.bot) return;
+    if (!message.guild || message.author.bot || lock) return;
 
     var user = message.mentions.users.first()
 
     if (user == undefined || user.id != config.bot_uid) { return; }
 
     console.log("\x1b[32mBot mentioned - Generating prompt...\x1b[0m\n")
+
+    lock = true
 
     var request = {
         seed: -1,
@@ -56,7 +61,7 @@ await client.on('message', async message => {
         prompt: generatePrompt(message)
     }
 
-    var socket = io("ws://localhost:3000");
+    var socket = io("ws://127.0.0.1:3000");
 
     message.channel.startTyping();
     socket.emit("request", request);
@@ -64,13 +69,16 @@ await client.on('message', async message => {
     var response = "";
     var fullresponse = ""
 
+    console.log("\n\x1b[44m// RESPONSE //\x1b[0m")
+
     socket.on("result", result => {
         response += result.response;
         fullresponse += result.response;
 
         if (response.endsWith("<end>")) {
             response = response.replace(/[\r]/gm, "")
-            response = response.replace(request.prompt, "").trim()
+            response = response.replace("\$", "\\$")
+            response = response.substring(response.length, request.prompt.length).trim()
             response = response.replace("<end>", "").trim()
 
             client.api.channels[message.channel.id].messages.post({
@@ -84,10 +92,11 @@ await client.on('message', async message => {
                 }
             }).then(() => {
                 console.log("\n\x1b[44m// RESPONSE //\x1b[0m")
-                console.log(response)
+                console.log(JSON.stringify(fullresponse))
                 console.log("\x1b[44m// END OF RESPONSE //\x1b[0m\n")
                 message.channel.stopTyping()
                 socket.disconnect()
+                lock = false
             })
         }
     })
@@ -96,7 +105,10 @@ await client.on('message', async message => {
 function generatePrompt(message) {
 
     var userinput = message.content.trim()
-    userinput = message.content.replace(`<@${config.bot_uid}>`, "").trim()
+    userinput = userinput.replaceAll(`<@${config.bot_uid}>`, "").trim()
+    userinput = userinput.replaceAll("`", "").trim()
+    userinput = userinput.replaceAll("$", `\\$`)
+    userinput = userinput.replaceAll("{", "(").replaceAll("}", ")")
 
     var input = `You are the President of the United States, Joe Biden.
 You must reply in-character, to any questions asked by your Citizens.
@@ -105,7 +117,7 @@ ${message.author.username}: ${userinput}
 Joe Biden: `
 
     console.log("\x1b[41m// PROMPT GENERATED //\x1b[0m")
-    console.log(input)
+    console.log(JSON.stringify(input))
     console.log("\x1b[41m// END OF PROMPT //\x1b[0m")
 
     return input;
