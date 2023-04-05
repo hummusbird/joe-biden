@@ -72,8 +72,8 @@ await client.on('message', async message => {
         if (response.endsWith("<end>")) {
             socket.emit("stop");
 
+            response = response.replace(request.prompt, "")
             response = response.replace("<end>", "").trim()
-            response = response.replace(request.prompt, "").trim()
 
             client.api.channels[message.channel.id].messages.post({
                 data: {
