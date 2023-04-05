@@ -85,7 +85,7 @@ await client.on('message', async message => {
                     }
                 }
             }).then(() => {
-                console.log("\x1b[44m\n// RESPONSE //\x1b[0m\n")
+                console.log("\n\x1b[44m// RESPONSE //\x1b[0m")
                 console.log(response)
                 console.log("\x1b[44m// END OF RESPONSE //\x1b[0m\n")
             })
