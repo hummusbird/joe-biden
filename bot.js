@@ -70,9 +70,8 @@ await client.on('message', async message => {
         fullresponse += result.response;
 
         if (response.endsWith("<end>")) {
-            socket.emit("stop");
-
-            response = response.replace(request.prompt, "")
+            response = response.replace(/[\r]/gm, "")
+            response = response.replace(request.prompt, "").trim()
             response = response.replace("<end>", "").trim()
 
             client.api.channels[message.channel.id].messages.post({
