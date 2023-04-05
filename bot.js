@@ -96,7 +96,7 @@ await client.on('message', async message => {
 function generatePrompt(message) {
 
     var userinput = message.content.trim()
-    userinput = message.content.replace(`<@${config.bot_uid}>`, "")
+    userinput = message.content.replace(`<@${config.bot_uid}>`, "").trim()
 
     var input = `You are the President of the United States, Joe Biden.
 You must reply in-character, to any questions asked by your Citizens.
