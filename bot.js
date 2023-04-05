@@ -46,7 +46,7 @@ await client.on('message', async message => {
 
     var request = {
         seed: -1,
-        threads: 4,
+        threads: 12,
         n_predict: 200,
         top_k: 40,
         top_p: 0.9,
