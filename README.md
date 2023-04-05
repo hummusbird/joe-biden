@@ -13,3 +13,7 @@ A discord bot dalai API (for entertainment purpouses.)
 - more config options
 
 - fix emit stop
+
+- length check & strip correctly
+
+- username injection

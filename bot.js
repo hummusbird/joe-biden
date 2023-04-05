@@ -41,7 +41,7 @@ await client.on('message', async message => {
 
     if (user == undefined || user.id != config.bot_uid) { return; }
 
-    console.log("Bot mentioned - Generating prompt...\n")
+    console.log("\x1b[42mBot mentioned - Generating prompt...\x1b[0m\n")
 
     var request = {
         seed: -1,
@@ -53,7 +53,7 @@ await client.on('message', async message => {
         repeat_last_n: 64,
         repeat_penalty: 1.1,
         debug: false,
-        models: ["alpaca.7B", "llama.13B"],
+        models: ["llama.13B"],
         model: "llama.13B",
         prompt: generatePrompt(message)
     }
@@ -83,6 +83,10 @@ await client.on('message', async message => {
                         guild_id: message.guild.id
                     }
                 }
+            }).then(() => {
+                console.log("// RESPONSE //")
+                console.log(response)
+                console.log("// END OF RESPONSE //")
             })
         }
     })
