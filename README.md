@@ -4,6 +4,12 @@ A discord bot dalai API (for entertainment purposes.)
 
 ## setup:
 
+install:
+
+```
+node
+
+npm
 ```
 npm i
 
