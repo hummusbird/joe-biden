@@ -1,6 +1,27 @@
 # Joe Biden.
 
-A discord bot dalai API (for entertainment purpouses.)
+A discord bot dalai API (for entertainment purposes.)
+
+## setup:
+
+```
+npm i
+
+npx dalai llama/alpaca install 7B
+
+npx dalai serve
+
+```
+
+put your token in a new file named .env:
+
+```
+BOT_TOKEN=XXXXXXXX
+```
+
+```
+node bot.js
+```
 
 ## todo:
 
@@ -9,10 +30,6 @@ A discord bot dalai API (for entertainment purpouses.)
 - date input
 
 - more config options
-
-- fix emit stop
-
-- socket lock
 
 - image gen
 
