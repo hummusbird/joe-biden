@@ -11,8 +11,8 @@ let { Client: DiscordClient, MessageManager, Message, MessageEmbed, MessageAttac
 
 loadEnv()
 
-const config = {
-    bot_uid: 951476676603310100,    // place your bot UID here.
+let config = {
+    bot_uid: 0,    // bot UID will be added on login
     supply_date: false,             // whether the prompt supplies the date & time
     reply_depth: 3,                 // how many replies deep to add to the prompt.
     model: "alpaca.7B"              // which AI model to use
@@ -23,6 +23,8 @@ let delay = ms => new Promise(res => setTimeout(res, ms));
 
 client.on('ready', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
+
+    config.bot_uid = client.user.id;
 
     let guilds = client.guilds.cache.map(guild => guild);
     console.log(`The bot is in ${guilds.length} guilds`);
@@ -37,7 +39,9 @@ client.on('guildDelete', async guild => {
 })
 
 await client.on('message', async message => {
-    if (!message.guild || message.author.bot || lock) return;
+    if (!message.guild || message.author.bot) { return };
+
+    if (lock) { return }
 
     var user = message.mentions.users.first() // get mentioned users
 
@@ -49,7 +53,7 @@ await client.on('message', async message => {
 
     var request = {
         seed: -1,
-        threads: 12,
+        threads: 10,
         n_predict: 200,
         top_k: 40,
         top_p: 0.9,
@@ -69,17 +73,26 @@ await client.on('message', async message => {
     var response = "";
     var fullresponse = ""
 
-    console.log("\n\x1b[44m// RESPONSE //\x1b[0m")
+    console.log("\n\x1b[32mGenerating response...\x1b[0m")
 
     socket.on("result", result => {
         response += result.response;
         fullresponse += result.response;
 
-        if (response.endsWith("<end>")) {
+        if (!message.deletable) // stops bot from crashing if the message was deleted
+        {
+            console.log("\x1b[41m Original message was deleted.\x1b[0m")
+            message.channel.stopTyping()
+            socket.disconnect()
+            lock = false
+        }
+
+        else if (response.endsWith("<end>")) {
             response = response.replace(/[\r]/gm, "")
             response = response.replace("\$", "\\$")
             response = response.substring(response.length, request.prompt.length).trim()
             response = response.replace("<end>", "").trim()
+            response = response.replace("[end of text", "").trim()
 
             client.api.channels[message.channel.id].messages.post({
                 data: {
@@ -92,7 +105,7 @@ await client.on('message', async message => {
                 }
             }).then(() => {
                 console.log("\n\x1b[44m// RESPONSE //\x1b[0m")
-                console.log(JSON.stringify(fullresponse))
+                console.log(response)
                 console.log("\x1b[44m// END OF RESPONSE //\x1b[0m\n")
                 message.channel.stopTyping()
                 socket.disconnect()
@@ -106,9 +119,9 @@ function generatePrompt(message) {
 
     var userinput = message.content.trim()
     userinput = userinput.replaceAll(`<@${config.bot_uid}>`, "").trim()
-    userinput = userinput.replaceAll("`", "").trim()
-    userinput = userinput.replaceAll("$", `\\$`)
-    userinput = userinput.replaceAll("{", "(").replaceAll("}", ")")
+    //userinput = userinput.replaceAll("`", "").trim()
+    //userinput = userinput.replaceAll("$", `\\$`)
+    //userinput = userinput.replaceAll("{", "(").replaceAll("}", ")")
 
     var input = `You are the President of the United States, Joe Biden.
 You must reply in-character, to any questions asked by your Citizens.
@@ -117,7 +130,7 @@ ${message.author.username}: ${userinput}
 Joe Biden: `
 
     console.log("\x1b[41m// PROMPT GENERATED //\x1b[0m")
-    console.log(JSON.stringify(input))
+    console.log(input)
     console.log("\x1b[41m// END OF PROMPT //\x1b[0m")
 
     return input;
