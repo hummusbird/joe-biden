@@ -4,22 +4,12 @@ A discord bot dalai API (for entertainment purposes.)
 
 ## setup:
 
-install:
+### install:
 
-```
-node
+- node
+- npm
 
-npm
-```
-run:
-```
-npm i
-
-npx dalai llama/alpaca install 7B
-
-npx dalai serve
-```
-
+### setup:
 put your token in a new file named .env:
 
 ```
@@ -27,6 +17,16 @@ BOT_TOKEN=XXXXXXXX
 ```
 
 ```
+npm i
+
+npx dalai llama/alpaca install 7B
+```
+
+### run:
+
+```
+npx dalai serve
+
 node bot.js
 ```
 
@@ -41,3 +41,11 @@ node bot.js
 - image gen
 
 - username injection
+
+- fix docker interface shenanigans
+
+- message length
+
+- add admin commands
+
+- config file
