@@ -44,9 +44,17 @@ await client.on('message', async message => {
 
     if (lock) { return }
 
-    var user = message.mentions.users.first() // get mentioned users
+    var users = message.mentions.users // get mentioned users
 
-    if (user == undefined || user.id != config.bot_uid) { return; } // return if bot isn't mentioned - works for reply and ping
+    if (users == undefined || users == null) { return; } // return if no mentions - works for reply and ping
+
+    var bot_mentioned = false
+
+    users.forEach(user => {
+        if (user.id == config.bot_uid) { bot_mentioned = true }
+    })
+
+    if (!bot_mentioned) { return }
 
     console.log("\x1b[32mBot mentioned - Generating prompt...\x1b[0m\n")
 
@@ -126,13 +134,13 @@ async function GetReplyStack(message, depth, stack) {
     var ref = message.reference;
 
     console.log("DEPTH:" + depth)
-    if (ref == undefined || ref == null || depth <= 1) {return stack}
+    if (ref == undefined || ref == null || depth <= 1) { return stack }
 
     var repliedTo = await message.channel.messages.fetch(ref.messageID);
 
     var name = repliedTo.author.username
     var content = repliedTo.content
-    
+
     stack = `${name}: ${content}\n` + stack
     depth--;
 
@@ -143,13 +151,13 @@ async function replaceUsernames(input) {
     var regex = /<@[0-9]+>/g;
     var matches = input.match(regex)
 
-    if (matches == undefined || matches == null) {return input}
+    if (matches == undefined || matches == null) { return input }
 
     matches.forEach(uid => {
         var id = uid.replace(/[^0-9.]/g, '')
         var user = client.users.cache.find(user => user.id == id)
 
-        if (user == undefined || user == null) {return}
+        if (user == undefined || user == null) { return }
 
         input = input.replaceAll(uid, user.username)
     })
