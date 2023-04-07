@@ -32,15 +32,11 @@ node bot.js
 
 ## todo:
 
-- reply depth
-
 - date input
 
 - more config options
 
 - image gen
-
-- username injection
 
 - fix docker interface shenanigans
 
