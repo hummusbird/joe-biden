@@ -11,12 +11,13 @@ node
 
 npm
 ```
+run:
+```
 npm i
 
 npx dalai llama/alpaca install 7B
 
 npx dalai serve
-
 ```
 
 put your token in a new file named .env:
