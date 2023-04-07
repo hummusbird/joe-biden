@@ -130,11 +130,11 @@ await client.on('message', async message => {
     })
 })
 
-async function GetReplyStack(message, depth, stack) {
+async function GetReplyStack(message, stack, depth) {
     var ref = message.reference;
 
     console.log("DEPTH:" + depth)
-    if (ref == undefined || ref == null || depth <= 1) { return stack }
+    if (ref == undefined || ref == null || depth >= config.reply_depth) { return stack }
 
     var repliedTo = await message.channel.messages.fetch(ref.messageID);
 
@@ -142,9 +142,9 @@ async function GetReplyStack(message, depth, stack) {
     var content = repliedTo.content
 
     stack = `${name}: ${content}\n` + stack
-    depth--;
+    depth++;
 
-    return GetReplyStack(repliedTo, depth, stack)
+    return GetReplyStack(repliedTo, stack, depth)
 }
 
 async function replaceUsernames(input) {
@@ -168,7 +168,7 @@ async function replaceUsernames(input) {
 async function generatePrompt(message) {
 
     let stack = ""
-    stack = await GetReplyStack(message, config.reply_depth, stack)
+    stack = await GetReplyStack(message, stack, 1)
     stack += `${message.author.username}: ${message.content}\n`
     stack = await replaceUsernames(stack)
     stack = stack.replaceAll(`<@${config.bot_uid}>`, "").trim()
