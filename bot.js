@@ -1,5 +1,6 @@
 import { read } from 'fs';
 import { createRequire } from 'module';
+import { machine } from 'os';
 const require = createRequire(import.meta.url);
 
 var lock = false; // lock input until LLM is finished, stops crosstalk.
@@ -12,9 +13,9 @@ let { Client: DiscordClient, MessageManager, Message, MessageEmbed, MessageAttac
 loadEnv()
 
 let config = {
-    bot_uid: 0,    // bot UID will be added on login
+    bot_uid: 0,                     // bot UID will be added on login
     supply_date: false,             // whether the prompt supplies the date & time
-    reply_depth: 3,                 // how many replies deep to add to the prompt.
+    reply_depth: 4,                 // how many replies deep to add to the prompt - higher = slower
     model: "alpaca.7B"              // which AI model to use
 }
 
@@ -62,7 +63,7 @@ await client.on('message', async message => {
         repeat_penalty: 1.1,
         debug: false,
         models: [config.model],
-        prompt: generatePrompt(message)
+        prompt: await generatePrompt(message)
     }
 
     var socket = io("ws://127.0.0.1:3000"); // connect to LLM
@@ -81,7 +82,13 @@ await client.on('message', async message => {
 
         if (!message.deletable) // stops bot from crashing if the message was deleted
         {
-            console.log("\x1b[41m Original message was deleted.\x1b[0m")
+            console.log("\x1b[41m\nOriginal message was deleted.\x1b[0m")
+
+            var stoprequest = {
+                prompt: "/stop"
+            }
+
+            socket.emit("request", stoprequest);
             message.channel.stopTyping()
             socket.disconnect()
             lock = false
@@ -115,19 +122,57 @@ await client.on('message', async message => {
     })
 })
 
-function generatePrompt(message) {
+async function GetReplyStack(message, depth, stack) {
+    var ref = message.reference;
 
-    var userinput = message.content.trim()
-    userinput = userinput.replaceAll(`<@${config.bot_uid}>`, "").trim()
-    //userinput = userinput.replaceAll("`", "").trim()
-    //userinput = userinput.replaceAll("$", `\\$`)
-    //userinput = userinput.replaceAll("{", "(").replaceAll("}", ")")
+    console.log("DEPTH:" + depth)
+    if (ref == undefined || ref == null || depth <= 1) {return stack}
+
+    var repliedTo = await message.channel.messages.fetch(ref.messageID);
+
+    var name = repliedTo.author.username
+    var content = repliedTo.content
+    
+    stack = `${name}: ${content}\n` + stack
+    depth--;
+
+    return GetReplyStack(repliedTo, depth, stack)
+}
+
+async function replaceUsernames(input) {
+    var regex = /<@[0-9]+>/g;
+    var matches = input.match(regex)
+
+    if (matches == undefined || matches == null) {return input}
+
+    matches.forEach(uid => {
+        var id = uid.replace(/[^0-9.]/g, '')
+        var user = client.users.cache.find(user => user.id == id)
+
+        if (user == undefined || user == null) {return}
+
+        input = input.replaceAll(uid, user.username)
+    })
+
+    return input;
+}
+
+async function generatePrompt(message) {
+
+    let stack = ""
+    stack = await GetReplyStack(message, config.reply_depth, stack)
+    stack += `${message.author.username}: ${message.content}\n`
+    stack = await replaceUsernames(stack)
+    stack = stack.replaceAll(`<@${config.bot_uid}>`, "").trim()
+    //stack = stack.replaceAll("`", "").trim()
+    //stack = stack.replaceAll("$", `\\$`)
+    //stack = stack.replaceAll("{", "(").replaceAll("}", ")")
 
     var input = `You are the President of the United States, Joe Biden.
 You must reply in-character, to any questions asked by your Citizens.
-Refer to your Citizens by name.
-${message.author.username}: ${userinput}
-Joe Biden: `
+Refer to your Citizens by name, with consise answers.
+${stack}
+joe biden: `
 
     console.log("\x1b[41m// PROMPT GENERATED //\x1b[0m")
     console.log(input)
