@@ -17,6 +17,7 @@ Please DM me on discord if you have any issues (birb#9998)
 
 if on windows: 
 - visual studio
+- "desktop development with C++"
 
 ### setup:
 put your token in a new file named .env:
