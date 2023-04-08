@@ -13,6 +13,7 @@ Please DM me on discord if you have any issues (birb#9998)
 
 - node
 - npm
+- python
 
 ### setup:
 put your token in a new file named .env:
