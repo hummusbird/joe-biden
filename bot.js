@@ -1,6 +1,4 @@
-import { read } from 'fs';
 import { createRequire } from 'module';
-import { machine } from 'os';
 const require = createRequire(import.meta.url);
 
 var lock = false; // lock input until LLM is finished, stops crosstalk.
@@ -12,12 +10,18 @@ let { Client: DiscordClient, MessageManager, Message, MessageEmbed, MessageAttac
 
 loadEnv()
 
+// CONFIGURE THE BOT HERE
+
 let config = {
     bot_uid: 0,                     // bot UID will be added on login
     supply_date: false,             // whether the prompt supplies the date & time
-    reply_depth: 4,                 // how many replies deep to add to the prompt - higher = slower
-    model: "alpaca.7B"              // which AI model to use
+    reply_depth: 5,                 // how many replies deep to add to the prompt - higher = slower
+    model: "alpaca.7B",             // which AI model to use
+    bot_name: "Joe Biden",          // who the bot thinks it is
+    prompt: `You are the President of the United States, Joe Biden.\nYou must reply in-character, to any questions asked by your Citizens.\nRefer to your Citizens by name, with concise answers.`
 }
+
+// CONFIGURE THE BOT HERE
 
 let client = new DiscordClient();
 let delay = ms => new Promise(res => setTimeout(res, ms));
@@ -42,7 +46,7 @@ client.on('guildDelete', async guild => {
 await client.on('message', async message => {
     if (!message.guild || message.author.bot) { return };
 
-    if (lock) { return }
+    if (lock) { return } // ignore message if currently generating
 
     var users = message.mentions.users // get mentioned users
 
@@ -107,7 +111,7 @@ await client.on('message', async message => {
             response = response.replace("\$", "\\$")
             response = response.substring(response.length, request.prompt.length).trim()
             response = response.replace("<end>", "").trim()
-            response = response.replace("[end of text", "").trim()
+            response = response.replace("[end of text]", "").trim() // sometimes the model says this for no reason
 
             client.api.channels[message.channel.id].messages.post({
                 data: {
@@ -133,12 +137,11 @@ await client.on('message', async message => {
 async function GetReplyStack(message, stack, depth) {
     var ref = message.reference;
 
-    console.log("DEPTH:" + depth)
     if (ref == undefined || ref == null || depth >= config.reply_depth) { return stack }
 
     var repliedTo = await message.channel.messages.fetch(ref.messageID);
 
-    var name = repliedTo.author.username
+    var name = repliedTo.author.id == config.bot_uid ? config.bot_name : repliedTo.author.username
     var content = repliedTo.content
 
     stack = `${name}: ${content}\n` + stack
@@ -159,7 +162,9 @@ async function replaceUsernames(input) {
 
         if (user == undefined || user == null) { return }
 
-        input = input.replaceAll(uid, user.username)
+        var name = id === config.bot_uid ? "" : user.username // only replace mentions of users, and strip the bot
+
+        input = input.replaceAll(uid, name).trim()
     })
 
     return input;
@@ -168,19 +173,26 @@ async function replaceUsernames(input) {
 async function generatePrompt(message) {
 
     let stack = ""
-    stack = await GetReplyStack(message, stack, 1)
-    stack += `${message.author.username}: ${message.content}\n`
-    stack = await replaceUsernames(stack)
-    stack = stack.replaceAll(`<@${config.bot_uid}>`, "").trim()
+    stack = await GetReplyStack(message, stack, 1)                  // add all replies in thread
+    stack += `${message.author.username}: ${message.content}\n`     // add username and message
+    stack = await replaceUsernames(stack)                           // replace all mentions with usernames
+    stack = stack.replaceAll(`<@${config.bot_uid}>`, "").trim()     // replace bot UID with nothing
+    stack = stack.replace(/  +/g, ' ');                             // strip double space   
     //stack = stack.replaceAll("`", "").trim()
     //stack = stack.replaceAll("$", `\\$`)
     //stack = stack.replaceAll("{", "(").replaceAll("}", ")")
 
-    var input = `You are the President of the United States, Joe Biden.
-You must reply in-character, to any questions asked by your Citizens.
-Refer to your Citizens by name, with consise answers.
-${stack}
-joe biden: `
+    var datetime = ""
+
+    if (config.supply_date) {
+        let date_ob = new Date();
+        let date = date_ob.toLocaleDateString('en-GB')
+        var time = date_ob.toLocaleTimeString();
+
+        datetime = "The date is " + date + " " + time + "\n";
+    }
+
+    var input = datetime + config.prompt + "\n" + stack + "\n" + config.bot_name + ": "
 
     console.log("\x1b[41m// PROMPT GENERATED //\x1b[0m")
     console.log(input)
