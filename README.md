@@ -15,6 +15,9 @@ Please DM me on discord if you have any issues (birb#9998)
 - npm
 - python
 
+if on windows: 
+- visual studio
+
 ### setup:
 put your token in a new file named .env:
 
