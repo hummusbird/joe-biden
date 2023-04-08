@@ -1,6 +1,11 @@
 # Joe Biden.
 
 A discord bot dalai API (for entertainment purposes.)
+Uses the LLAMA / ALPACA LLM AI model to generate responses to your questions in discord (as joe biden)
+
+Tested working under Linux.
+
+Please DM me on discord if you have any issues (birb#9998)
 
 ## setup:
 
