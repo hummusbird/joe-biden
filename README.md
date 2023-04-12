@@ -42,16 +42,10 @@ node bot.js
 
 ## todo:
 
-- date input
-
 - more config options
-
 - image gen
-
 - fix docker interface shenanigans
-
 - message length
-
 - add admin commands
-
 - config file
+

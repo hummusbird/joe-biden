@@ -88,9 +88,13 @@ await client.on('message', async message => {
 
 	console.log("\n\x1b[32mGenerating response...\x1b[0m");
 
+	console.log("\n\x1b[44m// RESPONSE //\x1b[0m");
+
 	socket.on("result", result => {
+
+		process.stdout.write(result.response)
+
 		response += result.response;
-		fullresponse += result.response;
 
 		if (!message.deletable) // stops bot from crashing if the message was deleted
 		{
@@ -123,9 +127,7 @@ await client.on('message', async message => {
 					}
 				}
 			}).then(() => {
-				console.log("\n\x1b[44m// RESPONSE //\x1b[0m");
-				console.log(response);
-				console.log("\x1b[44m// END OF RESPONSE //\x1b[0m\n");
+				console.log("\x1b\n[44m// END OF RESPONSE //\x1b[0m\n");
 				message.channel.stopTyping();
 				socket.disconnect();
 				lock = false;
