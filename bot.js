@@ -66,7 +66,7 @@ await client.on('message', async message => {
 
 	var request = {
 		seed: -1,
-		threads: 10,
+		threads: 4,
 		n_predict: 200,
 		top_k: 40,
 		top_p: 0.9,
@@ -127,7 +127,7 @@ await client.on('message', async message => {
 					}
 				}
 			}).then(() => {
-				console.log("\x1b\n[44m// END OF RESPONSE //\x1b[0m\n");
+				console.log("\x1b[44m\n// END OF RESPONSE //\x1b[0m\n");
 				message.channel.stopTyping();
 				socket.disconnect();
 				lock = false;
