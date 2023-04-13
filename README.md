@@ -29,7 +29,18 @@ BOT_TOKEN=XXXXXXXX
 ```
 npm i
 
-npx dalai llama/alpaca install 7B
+npx dalai alpaca install 7B
+```
+### config:
+open config.json
+
+```
+supply_date:    // whether or not to provide the current date & time to the LLM
+reply_depth:    // how many replies deep to feed to the LLM
+model:          // which model to use (alpaca.7B provides good results)
+bot_name:       // who the bot thinks they are
+prompt:         // provide some context and instructions
+threads:        // how many threads to use. set this to your number of P cores
 ```
 
 ### run:
@@ -42,10 +53,9 @@ node bot.js
 
 ## todo:
 
-- more config options
+- fingerprint requests
+- msg queue
 - image gen
 - fix docker interface shenanigans
 - message length
 - add admin commands
-- config file
-

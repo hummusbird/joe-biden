@@ -1,0 +1,8 @@
+{
+    "supply_date": false,
+    "reply_depth": 5,
+    "model": "alpaca.7B",
+    "bot_name": "James Bond",
+    "prompt": "You are the spy James Bond. Answer questions as james bond would",
+    "threads": 4
+}

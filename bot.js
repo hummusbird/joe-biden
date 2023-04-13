@@ -1,7 +1,9 @@
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
+const fs = require('fs');
 
 var lock = false; // lock input until LLM is finished, stops crosstalk.
+var bot_uid = 0; // bot UID will be assigned on login
 
 import { io } from "socket.io-client";
 
@@ -10,18 +12,24 @@ let { Client: DiscordClient, MessageManager, Message, MessageEmbed, MessageAttac
 
 loadEnv();
 
-// CONFIGURE THE BOT HERE
+// default configuration
 
 let config = {
-	bot_uid: 0,                     // bot UID will be added on login
 	supply_date: false,             // whether the prompt supplies the date & time
 	reply_depth: 5,                 // how many replies deep to add to the prompt - higher = slower
 	model: "alpaca.7B",             // which AI model to use
 	bot_name: "Joe Biden",          // who the bot thinks it is
-	prompt: "You are the President of the United States, Joe Biden.\nYou must reply in-character, to any questions asked by your Citizens.\nRefer to your Citizens by name, with concise answers."
+	prompt: "You are the President of the United States, Joe Biden.\nYou must reply in-character, to any questions asked by your Citizens.\nRefer to your Citizens by name, with concise answers.",
+	threads: 4						// how many threads to use
 }
 
-// CONFIGURE THE BOT HERE
+fs.readFile('./config.json', 'utf8', (error, data) => {
+	if (error) {
+		console.log(error);
+		return;
+	}
+	config = JSON.parse(data);
+})
 
 let client = new DiscordClient();
 let delay = ms => new Promise(res => setTimeout(res, ms));
@@ -29,7 +37,7 @@ let delay = ms => new Promise(res => setTimeout(res, ms));
 client.on('ready', async () => {
 	console.log(`Logged in as ${client.user.tag}!`);
 
-	config.bot_uid = client.user.id;
+	bot_uid = client.user.id;
 
 	let guilds = client.guilds.cache.map(guild => guild);
 	console.log(`The bot is in ${guilds.length} guilds`);
@@ -55,7 +63,7 @@ await client.on('message', async message => {
 	var bot_mentioned = false
 
 	users.forEach(user => {
-		if (user.id == config.bot_uid) { bot_mentioned = true; }
+		if (user.id == bot_uid) { bot_mentioned = true; }
 	})
 
 	if (!bot_mentioned) { return; }
@@ -66,7 +74,7 @@ await client.on('message', async message => {
 
 	var request = {
 		seed: -1,
-		threads: 4,
+		threads: config.threads,
 		n_predict: 200,
 		top_k: 40,
 		top_p: 0.9,
@@ -143,7 +151,7 @@ async function GetReplyStack(message, stack, depth) {
 
 	var repliedTo = await message.channel.messages.fetch(ref.messageID);
 
-	var name = repliedTo.author.id == config.bot_uid ? config.bot_name : repliedTo.author.username;
+	var name = repliedTo.author.id == bot_uid ? config.bot_name : repliedTo.author.username;
 	var content = repliedTo.content;
 
 	stack = `${name}: ${content}\n` + stack;
@@ -164,7 +172,7 @@ async function replaceUsernames(input) {
 
 		if (user == undefined || user == null) { return; }
 
-		var name = id === config.bot_uid ? "" : user.username; // only replace mentions of users, and strip the bot
+		var name = id === bot_uid ? "" : user.username; // only replace mentions of users, and strip the bot
 
 		input = input.replaceAll(uid, name).trim();
 	})
@@ -178,7 +186,7 @@ async function generatePrompt(message) {
 	stack = await GetReplyStack(message, stack, 1);						// add all replies in thread
 	stack += `${message.author.username}: ${message.content}\n`;		// add username and message
 	stack = await replaceUsernames(stack);								// replace all mentions with usernames
-	stack = stack.replaceAll(`<@${config.bot_uid}>`, "").trim();		// replace bot UID with nothing
+	stack = stack.replaceAll(`<@${bot_uid}>`, "").trim();		// replace bot UID with nothing
 	stack = stack.replaceAll(/  +/g, " ");								// strip double space   
 	//stack = stack.replaceAll("`", "").trim();
 	//stack = stack.replaceAll("$", `\\$`);
