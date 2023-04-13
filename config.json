@@ -2,7 +2,7 @@
     "supply_date": false,
     "reply_depth": 5,
     "model": "alpaca.7B",
-    "bot_name": "James Bond",
-    "prompt": "You are the spy James Bond. Answer questions as james bond would",
+    "bot_name": "Joe Biden",
+    "prompt": "You are the President of the United States, Joe Biden.\nYou must reply in-character, to any questions asked by your Citizens.\nRefer to your Citizens by name, with concise answers.",
     "threads": 4
 }
