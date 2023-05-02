@@ -100,13 +100,28 @@ await client.on('message', async message => {
 
 	socket.on("result", result => {
 
+		response += result.response;
 		process.stdout.write(result.response)
 
-		response += result.response;
+		if (response.length > request.prompt.length) {
+			let trimmedresponse = response.substring(response.length, request.prompt.length).trim();
+			if (trimmedresponse.includes("\n[")) {
+				console.log("\n\x1b[43m\x1b[30mBot tried to rant\x1b[0m");
+
+				response = response.substring(0, response.length - 3)
+				response += "\n<end>"
+
+				var stoprequest = {
+					prompt: "/stop"
+				}
+
+				socket.emit("request", stoprequest);
+			}
+		}
 
 		if (!message.deletable) // stops bot from crashing if the message was deleted
 		{
-			console.log("\x1b[41m\nOriginal message was deleted.\x1b[0m");
+			console.log("\x1b[41mOriginal message was deleted.\x1b[0m");
 
 			var stoprequest = {
 				prompt: "/stop"
@@ -135,7 +150,7 @@ await client.on('message', async message => {
 					}
 				}
 			}).then(() => {
-				console.log("\x1b[44m\n// END OF RESPONSE //\x1b[0m\n");
+				console.log("\n\x1b[44m// END OF RESPONSE //\x1b[0m\n");
 				message.channel.stopTyping();
 				socket.disconnect();
 				lock = false;
