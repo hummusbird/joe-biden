@@ -66,6 +66,8 @@ await client.on('message', async message => {
 		if (user.id == bot_uid) { bot_mentioned = true; }
 	})
 
+	if (message.content.toLowerCase().includes(config.bot_name.toLowerCase())) { bot_mentioned = true; }
+
 	if (!bot_mentioned) { return; }
 
 	console.log("\x1b[32mBot mentioned - Generating prompt...\x1b[0m\n");
