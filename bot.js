@@ -154,7 +154,7 @@ async function GetReplyStack(message, stack, depth) {
 	var name = repliedTo.author.id == bot_uid ? config.bot_name : repliedTo.author.username;
 	var content = repliedTo.content;
 
-	stack = `${name}: ${content}\n` + stack;
+	stack = `[${name}]: ${content}\n` + stack;
 	depth++;
 
 	return GetReplyStack(repliedTo, stack, depth);
@@ -184,7 +184,7 @@ async function generatePrompt(message) {
 
 	let stack = "";
 	stack = await GetReplyStack(message, stack, 1);						// add all replies in thread
-	stack += `${message.author.username}: ${message.content}\n`;		// add username and message
+	stack += `[${message.author.username}]: ${message.content}\n`;		// add username and message
 	stack = await replaceUsernames(stack);								// replace all mentions with usernames
 	stack = stack.replaceAll(`<@${bot_uid}>`, "").trim();		// replace bot UID with nothing
 	stack = stack.replaceAll(/  +/g, " ");								// strip double space   
@@ -196,13 +196,13 @@ async function generatePrompt(message) {
 
 	if (config.supply_date) {
 		let date_ob = new Date();
-		let date = date_ob.toLocaleDateString('en-GB');
+		var date = date_ob.toLocaleDateString('en-GB');
 		var time = date_ob.toLocaleTimeString();
 
 		datetime = "The date is " + date + " " + time + "\n";
 	}
 
-	var input = datetime + config.prompt + "\n" + stack + "\n" + config.bot_name + ": ";
+	var input = datetime + config.prompt + "\n" + stack + "\n[" + config.bot_name + "]: ";
 
 	console.log("\x1b[41m// PROMPT GENERATED //\x1b[0m");
 	console.log(input);
