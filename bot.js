@@ -219,7 +219,7 @@ async function generatePrompt(message) {
 		datetime = "The date is " + date + " " + time + "\n";
 	}
 
-	var input = datetime + config.prompt + "\n" + stack + "\n[" + config.bot_name + "]: ";
+	var input = datetime + config.prompt + "\n" + stack + "\n[" + config.bot_name + "]:";
 
 	console.log("\x1b[41m// PROMPT GENERATED //\x1b[0m");
 	console.log(input);
