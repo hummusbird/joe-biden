@@ -72,7 +72,7 @@ await client.on('message', async message => {
 
 	var imageregex = /\b(take|post|paint|generate|make|draw|create|show|give|snap|capture|send|display|share|shoot|see|provide|another)\b.*(\S\s{0,10})?(image|picture|screenshot|screenie|painting|pic|photo|photograph|portrait|selfie)/gm
 
-	if (message.content.toLowercase().match(imageregex)) { // image requested from bot
+	if (message.content.toLowerCase().match(imageregex)) { // image requested from bot
 		await SendSDImage(message);
 	}
 	else { // text requested from bot
