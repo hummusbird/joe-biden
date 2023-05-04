@@ -55,9 +55,9 @@ node bot.js
 
 - fingerprint requests
 - msg queue
-- image gen
 - change params to make him incoherent occasionally
 - fix docker interface shenanigans
 - message length
 - add admin commands
 - add admin only toggle
+- cleanup image prompt gen
