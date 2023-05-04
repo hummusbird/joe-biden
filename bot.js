@@ -19,6 +19,7 @@ let config = {
 	reply_depth: 5,                 // how many replies deep to add to the prompt - higher = slower
 	model: "alpaca.7B",             // which AI model to use
 	bot_name: "Joe Biden",          // who the bot thinks it is
+	bot_pronouns: "he",				// for image gen purposes (he / she / they etc...)
 	prompt: "You are the President of the United States, Joe Biden.\nYou must reply in-character, to any questions asked by your Citizens.\nRefer to your Citizens by name, with concise answers.",
 	threads: 4						// how many threads to use
 }
@@ -52,21 +53,16 @@ client.on('guildDelete', async guild => {
 })
 
 await client.on('message', async message => {
-	if (!message.guild || message.author.bot) { return; }
-
+	if (!message.guild || message.author.bot) { return; } // ignore messages from dms or other bots
 	if (lock) { return; } // ignore message if currently generating
 
 	var users = message.mentions.users // get mentioned users
-
 	if (users == undefined || users == null) { return; } // return if no mentions - works for reply and ping
 
 	var bot_mentioned = false
 
-	users.forEach(user => {
-		if (user.id == bot_uid) { bot_mentioned = true; }
-	})
-
-	if (message.content.toLowerCase().includes(config.bot_name.toLowerCase())) { bot_mentioned = true; }
+	users.forEach(user => { if (user.id == bot_uid) { bot_mentioned = true; } })  // bot explicitly pinged
+	if (message.content.toLowerCase().includes(config.bot_name.toLowerCase())) { bot_mentioned = true; } // bot implicitly mentioned
 
 	if (!bot_mentioned) { return; }
 
@@ -74,92 +70,41 @@ await client.on('message', async message => {
 
 	lock = true // lock input until LLM has returned
 
-	var request = {
-		seed: -1,
-		threads: config.threads,
-		n_predict: 200,
-		top_k: 40,
-		top_p: 0.9,
-		temp: 0.8,
-		repeat_last_n: 64,
-		repeat_penalty: 1.1,
-		debug: false,
-		models: [config.model],
-		prompt: await generatePrompt(message)
+	var imageregex = /\b(take|post|paint|generate|make|draw|create|show|give|snap|capture|send|display|share|shoot|see|provide|another)\b.*(\S\s{0,10})?(image|picture|screenshot|screenie|painting|pic|photo|photograph|portrait|selfie)/gm
+
+	if (message.content.match(imageregex)) { // image requested from bot
+		await SendSDImage(message);
+	}
+	else { // text requested from bot
+		await SendLLMText(message)
+	}
+})
+
+async function SendSDImage(message) {
+	console.log("\x1b[32mImage requested - Generating prompt...\x1b[0m\n");
+
+	var SDPrompt = await GenerateSDPrompt(message);
+}
+
+async function SendLLMText(message) {
+	var out = await GetLLMReply(await GenerateLLMPrompt(message), message)
+
+	if (out != null && out != undefined) {
+		client.api.channels[message.channel.id].messages.post({
+			data: {
+				content: out,
+				message_reference: {
+					message_id: message.id,
+					channel_id: message.channel.id,
+					guild_id: message.guild.id
+				}
+			}
+		})
 	}
 
-	var socket = io("ws://127.0.0.1:3000"); // connect to LLM
-
-	message.channel.startTyping();
-	socket.emit("request", request);
-
-	var response = "";
-	var fullresponse = "";
-
-	console.log("\n\x1b[32mGenerating response...\x1b[0m");
-
-	console.log("\n\x1b[44m// RESPONSE //\x1b[0m");
-
-	socket.on("result", result => {
-
-		response += result.response;
-		process.stdout.write(result.response)
-
-		if (response.length > request.prompt.length) {
-			let trimmedresponse = response.substring(response.length, request.prompt.length).trim();
-			if (trimmedresponse.includes("\n[")) {
-				console.log("\n\x1b[43m\x1b[30mBot tried to rant\x1b[0m");
-
-				response = response.substring(0, response.length - 3)
-				response += "\n<end>"
-
-				var stoprequest = {
-					prompt: "/stop"
-				}
-
-				socket.emit("request", stoprequest);
-			}
-		}
-
-		if (!message.deletable) // stops bot from crashing if the message was deleted
-		{
-			console.log("\x1b[41mOriginal message was deleted.\x1b[0m");
-
-			var stoprequest = {
-				prompt: "/stop"
-			}
-
-			socket.emit("request", stoprequest);
-			message.channel.stopTyping();
-			socket.disconnect();
-			lock = false;
-		}
-
-		else if (response.endsWith("<end>")) {
-			response = response.replace(/[\r]/gm, "");
-			response = response.replace("\$", "\\$");
-			response = response.substring(response.length, request.prompt.length).trim();
-			response = response.replace("<end>", "").trim();
-			response = response.replace("[end of text]", "").trim(); // sometimes the model says this for no reason
-
-			client.api.channels[message.channel.id].messages.post({
-				data: {
-					content: response,
-					message_reference: {
-						message_id: message.id,
-						channel_id: message.channel.id,
-						guild_id: message.guild.id
-					}
-				}
-			}).then(() => {
-				console.log("\n\x1b[44m// END OF RESPONSE //\x1b[0m\n");
-				message.channel.stopTyping();
-				socket.disconnect();
-				lock = false;
-			})
-		}
-	})
-})
+	message.channel.stopTyping();
+	lock = false;
+}
 
 async function GetReplyStack(message, stack, depth) {
 	var ref = message.reference;
@@ -177,7 +122,7 @@ async function GetReplyStack(message, stack, depth) {
 	return GetReplyStack(repliedTo, stack, depth);
 }
 
-async function replaceUsernames(input) {
+async function ReplaceUsernames(input) {
 	var regex = /<@[0-9]+>/g;
 	var matches = input.match(regex);
 
@@ -197,13 +142,12 @@ async function replaceUsernames(input) {
 	return input;
 }
 
-async function generatePrompt(message) {
-
+async function GenerateLLMPrompt(message) {
 	let stack = "";
 	stack = await GetReplyStack(message, stack, 1);						// add all replies in thread
 	stack += `[${message.author.username}]: ${message.content}\n`;		// add username and message
-	stack = await replaceUsernames(stack);								// replace all mentions with usernames
-	stack = stack.replaceAll(`<@${bot_uid}>`, "").trim();		// replace bot UID with nothing
+	stack = await ReplaceUsernames(stack);								// replace all mentions with usernames
+	stack = stack.replaceAll(`<@${bot_uid}>`, "").trim();				// replace bot UID with nothing
 	stack = stack.replaceAll(/  +/g, " ");								// strip double space   
 	//stack = stack.replaceAll("`", "").trim();
 	//stack = stack.replaceAll("$", `\\$`);
@@ -226,6 +170,108 @@ async function generatePrompt(message) {
 	console.log("\x1b[41m// END OF PROMPT //\x1b[0m");
 
 	return input;
+}
+
+async function GenerateSDPrompt(message) {
+	let stack = "";
+	stack = await GetReplyStack(message, stack, 1);						// add all replies in thread
+	stack += `[${message.author.username}]: ${message.content}\n`;		// add username and message
+	stack = await ReplaceUsernames(stack);								// replace all mentions with usernames
+	stack = stack.replaceAll(`<@${bot_uid}>`, "").trim();				// replace bot UID with nothing
+	stack = stack.replaceAll(/  +/g, " ");								// strip double space
+
+	let instruction = "### Instruction: Create descriptive nouns and image tags to describe an image that the user requests. Maintain accuracy to the user's prompt.\n";
+
+	input = instruction + stack + "\n### Description of the requested image:";
+
+	console.log("\x1b[41m// PROMPT GENERATED //\x1b[0m");
+	console.log(input);
+	console.log("\x1b[41m// END OF PROMPT //\x1b[0m");
+
+	var request = {
+		seed: -1,
+		threads: config.threads,
+		n_predict: 200,
+		top_k: 40,
+		top_p: 0.9,
+		temp: 0.8,
+		repeat_last_n: 64,
+		repeat_penalty: 1.1,
+		debug: false,
+		models: [config.model],
+		prompt: input
+	}
+}
+
+async function GetLLMReply(input, message) {
+	return new Promise(function (resolve) {
+		var request = {
+			seed: -1,
+			threads: config.threads,
+			n_predict: 200,
+			top_k: 40,
+			top_p: 0.9,
+			temp: 0.8,
+			repeat_last_n: 64,
+			repeat_penalty: 1.1,
+			debug: false,
+			models: [config.model],
+			prompt: input
+		}
+
+		var socket = io("ws://127.0.0.1:3000"); // connect to LLM
+
+		message.channel.startTyping();
+		socket.emit("request", request);
+
+		var response = "";
+
+		console.log("\n\x1b[32mGenerating response...\x1b[0m");
+		console.log("\n\x1b[44m// RESPONSE //\x1b[0m");
+
+		socket.on("result", result => {
+
+			response += result.response;
+			process.stdout.write(result.response)
+
+			if (response.length > request.prompt.length) {
+				let trimmedresponse = response.substring(response.length, request.prompt.length).trim();
+				if (trimmedresponse.includes("\n[")) {
+					console.log("\n\x1b[43m\x1b[30mBot tried to rant\x1b[0m");
+
+					response = response.substring(0, response.length - 3)
+					response += "\n<end>"
+
+					socket.emit("request", { prompt: "/stop" });
+				}
+			}
+
+			if (!message.deletable) // stops bot from crashing if the message was deleted
+			{
+				console.log("\n\x1b[43m\x1b[30mOriginal message was deleted\x1b[0m");
+
+				socket.emit("request", { prompt: "/stop" });
+
+				message.channel.stopTyping();
+				setTimeout(() => socket.disconnect(), 100)
+				lock = false;
+				resolve(null)
+			}
+
+			else if (response.endsWith("<end>")) {
+				response = response.replace(/[\r]/gm, "");
+				response = response.replace("\$", "\\$");
+				response = response.substring(response.length, request.prompt.length).trim();
+				response = response.replace("<end>", "").trim();
+				response = response.replace("[end of text]", "").trim(); // sometimes the model says this for no reason
+
+				socket.disconnect();
+				console.log("\n\x1b[44m// END OF RESPONSE //\x1b[0m\n");
+
+				resolve(response)
+			}
+		})
+	})
 }
 
 let [arg] = process.argv.slice(2);
