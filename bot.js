@@ -72,7 +72,7 @@ await client.on('message', async message => {
 
 	var imageregex = /\b(take|post|paint|generate|make|draw|create|show|give|snap|capture|send|display|share|shoot|see|provide|another)\b.*(\S\s{0,10})?(image|picture|screenshot|screenie|painting|pic|photo|photograph|portrait|selfie)/gm
 
-	if (message.content.match(imageregex)) { // image requested from bot
+	if (message.content.toLowercase().match(imageregex)) { // image requested from bot
 		await SendSDImage(message);
 	}
 	else { // text requested from bot
@@ -81,9 +81,35 @@ await client.on('message', async message => {
 })
 
 async function SendSDImage(message) {
-	console.log("\x1b[32mImage requested - Generating prompt...\x1b[0m\n");
+	console.log("\x1b[32mImage requested - Generating prompt...\x1b[0m");
 
 	var SDPrompt = await GenerateSDPrompt(message);
+
+	const payload = JSON.stringify({
+		prompt: SDPrompt,
+		steps: 15,
+		width: 512,
+		height: 768
+	});
+
+	console.log("\x1b[32mGenerating image based on prompt...\x1b[0m");
+
+	fetch(`http://localhost:7860/sdapi/v1/txt2img`, {
+		body: payload,
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json"
+		}
+	}).then(res => res.json())
+		.then(data => {
+			let b64buffer = new Buffer.from(data.images[0], "base64");
+			const attachment = new MessageAttachment(b64buffer);
+			message.channel.send(attachment);
+		})
+		.then(() => {
+			message.channel.stopTyping();
+			lock = false;
+		})
 }
 
 async function SendLLMText(message) {
@@ -179,28 +205,17 @@ async function GenerateSDPrompt(message) {
 	stack = await ReplaceUsernames(stack);								// replace all mentions with usernames
 	stack = stack.replaceAll(`<@${bot_uid}>`, "").trim();				// replace bot UID with nothing
 	stack = stack.replaceAll(/  +/g, " ");								// strip double space
+	stack = stack.replaceAll('you', config.bot_name);						// replace "you" with the bot's name
 
 	let instruction = "### Instruction: Create descriptive nouns and image tags to describe an image that the user requests. Maintain accuracy to the user's prompt.\n";
 
-	input = instruction + stack + "\n### Description of the requested image:";
+	let input = instruction + stack + "\n### Description of the requested image:";
 
 	console.log("\x1b[41m// PROMPT GENERATED //\x1b[0m");
 	console.log(input);
 	console.log("\x1b[41m// END OF PROMPT //\x1b[0m");
 
-	var request = {
-		seed: -1,
-		threads: config.threads,
-		n_predict: 200,
-		top_k: 40,
-		top_p: 0.9,
-		temp: 0.8,
-		repeat_last_n: 64,
-		repeat_penalty: 1.1,
-		debug: false,
-		models: [config.model],
-		prompt: input
-	}
+	return await GetLLMReply(input, message)
 }
 
 async function GetLLMReply(input, message) {
