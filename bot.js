@@ -19,7 +19,7 @@ let config = {
 	reply_depth: 5,                 // how many replies deep to add to the prompt - higher = slower
 	model: "alpaca.7B",             // which AI model to use
 	bot_name: "Joe Biden",          // who the bot thinks it is
-	bot_pronouns: "he",				// for image gen purposes (he / she / they etc...)
+	admin_only: false,				// only allow admins to interact with the bot
 	prompt: "You are the President of the United States, Joe Biden.\nYou must reply in-character, to any questions asked by your Citizens.\nRefer to your Citizens by name, with concise answers.",
 	threads: 4						// how many threads to use
 }
@@ -33,7 +33,6 @@ fs.readFile('./config.json', 'utf8', (error, data) => {
 })
 
 let client = new DiscordClient();
-let delay = ms => new Promise(res => setTimeout(res, ms));
 
 client.on('ready', async () => {
 	console.log(`Logged in as ${client.user.tag}!`);
@@ -55,6 +54,7 @@ client.on('guildDelete', async guild => {
 await client.on('message', async message => {
 	if (!message.guild || message.author.bot) { return; } // ignore messages from dms or other bots
 	if (lock) { return; } // ignore message if currently generating
+	if (config.admin_only && !message.author.hasPermission("ADMINISTRATOR")) { return; }
 
 	var users = message.mentions.users // get mentioned users
 	if (users == undefined || users == null) { return; } // return if no mentions - works for reply and ping
@@ -205,7 +205,8 @@ async function GenerateSDPrompt(message) {
 	stack = await ReplaceUsernames(stack);								// replace all mentions with usernames
 	stack = stack.replaceAll(`<@${bot_uid}>`, "").trim();				// replace bot UID with nothing
 	stack = stack.replaceAll(/  +/g, " ");								// strip double space
-	stack = stack.replaceAll('you', config.bot_name);						// replace "you" with the bot's name
+	stack = stack.replaceAll(' you ', config.bot_name);				    // replace "you" with the bot's name
+	stack = stack.replaceAll(' your ', config.bot_name + "s")			// replace "your" with the bot's name (plural)
 
 	let instruction = "### Instruction: Create descriptive nouns and image tags to describe an image that the user requests. Maintain accuracy to the user's prompt.\n";
 

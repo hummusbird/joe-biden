@@ -3,6 +3,7 @@
     "reply_depth": 5,
     "model": "alpaca.7B",
     "bot_name": "Joe Biden",
+    "admin_only": true,
     "prompt": "a back and forth conversation",
     "threads": 12
 }
