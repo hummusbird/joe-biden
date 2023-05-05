@@ -206,8 +206,8 @@ async function GenerateSDPrompt(message) {
 	stack = stack.replaceAll(`<@${bot_uid}>`, "").trim();				// replace bot UID with nothing
 	stack = stack.replaceAll(/  +/g, " ");								// strip double space
 	stack = stack.replaceAll(' you ', ` ${config.bot_name} `);			// replace "you" with the bot's name
-	stack = stack.replaceAll(' your ', ` ${config.bot_name}s `)			// replace "your" with the bot's name (plural)
-	stack = stack.replaceAll(' yourself ', ` ${config.bot_name}s `)		// replace "your" with the bot's name (plural)
+	stack = stack.replaceAll(' your ', ` ${config.bot_name}s `)			// replace "your" with the bot's name
+	stack = stack.replaceAll(' yourself ', ` ${config.bot_name}s `)		// replace "yourself" with the bot's name
 
 	let instruction = "### Instruction: Create descriptive nouns and image tags to describe an image that the user requests. Maintain accuracy to the user's prompt.\n";
 
