@@ -54,7 +54,7 @@ client.on('guildDelete', async guild => {
 await client.on('message', async message => {
 	if (!message.guild || message.author.bot) { return; } // ignore messages from dms or other bots
 	if (lock) { return; } // ignore message if currently generating
-	if (config.admin_only && !message.author.hasPermission("ADMINISTRATOR")) { return; }
+	if (config.admin_only && !message.member.hasPermission("ADMINISTRATOR")) { return; }
 
 	var users = message.mentions.users // get mentioned users
 	if (users == undefined || users == null) { return; } // return if no mentions - works for reply and ping
