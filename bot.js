@@ -214,7 +214,7 @@ async function GenerateLLMPrompt(message) {
 	stack = await ReplaceUsernames(stack);								// replace all mentions with usernames
 	stack = stack.replaceAll(`<@${bot_uid}>`, "").trim();				// replace bot UID with nothing
 	stack = stack.replaceAll(/  +/g, " ");								// strip double space   
-	//stack = stack.replaceAll("`", "").trim();
+	stack = stack.replaceAll("'", "").trim();							// strip single quotes (to keep llm trim length the same)
 	//stack = stack.replaceAll("$", `\\$`);
 	//stack = stack.replaceAll("{", "(").replaceAll("}", ")");
 
