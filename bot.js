@@ -86,6 +86,7 @@ await client.on('message', async message => {
 					default:
 						break;
 				}
+				break;
 			case "reload":
 				await LoadConfig();
 				message.channel.send('```diff\n+ reloaded config```')
