@@ -24,14 +24,6 @@ let config = {
 	threads: 4						// how many threads to use
 }
 
-fs.readFile('./config.json', 'utf8', (error, data) => {
-	if (error) {
-		console.log(error);
-		return;
-	}
-	config = JSON.parse(data);
-})
-
 let client = new DiscordClient();
 
 client.on('ready', async () => {
@@ -42,6 +34,8 @@ client.on('ready', async () => {
 	let guilds = client.guilds.cache.map(guild => guild);
 	console.log(`The bot is in ${guilds.length} guilds`);
 });
+
+await LoadConfig();
 
 client.on('guildCreate', async guild => {
 	console.log("\x1b[32m", `Joined new guild: ${guild.name}`);
@@ -59,6 +53,50 @@ await client.on('message', async message => {
 	var users = message.mentions.users // get mentioned users
 	if (users == undefined || users == null) { return; } // return if no mentions - works for reply and ping
 
+	if (message.content.startsWith(">>") && message.member.hasPermission("ADMINISTRATOR")) { // admin commands
+		let commands = message.content.substring(2, message.content.length).split(" ");
+
+		switch (commands[0]) {
+			case "set":
+				if (commands[2] == null || commands[2] == undefined) { break; } // nothing after "set"
+
+				switch (commands[1]) {
+					case "name":
+						commands.splice(0, 2)
+						config.bot_name = commands.toString().replaceAll(",", " ").replaceAll(/  +/g, " ");
+						message.channel.send('```diff\n+ set bot_name```')
+						return;
+					case "prompt":
+						commands.splice(0, 2)
+						config.prompt = commands.toString().replaceAll(",", " ").replaceAll(/  +/g, " ");
+						message.channel.send('```diff\n+ set prompt```')
+						return;
+					case "admin":
+						config.admin_only = commands[2]
+						message.channel.send('```diff\n+ set admin_only```')
+						return;
+					case "date":
+						config.supply_date = commands[2]
+						message.channel.send('```diff\n+ set supply_date```')
+						return;
+					case "depth":
+						config.reply_depth = commands[2]
+						message.channel.send('```diff\n+ set reply_depth```')
+						return;
+					default:
+						break;
+				}
+			case "reload":
+				await LoadConfig();
+				message.channel.send('```diff\n+ reloaded config```')
+				return;
+			default:
+				break;
+		}
+
+		message.channel.send('```diff\n- invalid command```')
+	}
+
 	var bot_mentioned = false
 
 	users.forEach(user => { if (user.id == bot_uid) { bot_mentioned = true; } })  // bot explicitly pinged
@@ -72,11 +110,11 @@ await client.on('message', async message => {
 
 	var imageregex = /\b(take|post|paint|generate|make|draw|create|show|give|snap|capture|send|display|share|shoot|see|provide|another)\b.*(\S\s{0,10})?(image|picture|screenshot|screenie|painting|pic|photo|photograph|portrait|selfie)/gm
 
-	if (message.content.toLowerCase().match(imageregex)) { // image requested from bot
-		await SendSDImage(message);
+	if (message.content.toLowerCase().match(imageregex)) {
+		await SendSDImage(message); // image requested from bot
 	}
-	else { // text requested from bot
-		await SendLLMText(message)
+	else {
+		await SendLLMText(message); // text requested from bot
 	}
 })
 
@@ -181,7 +219,7 @@ async function GenerateLLMPrompt(message) {
 
 	var datetime = "";
 
-	if (config.supply_date) {
+	if (config.supply_date == true) {
 		let date_ob = new Date();
 		var date = date_ob.toLocaleDateString('en-GB');
 		var time = date_ob.toLocaleTimeString();
@@ -288,6 +326,16 @@ async function GetLLMReply(input, message) {
 				resolve(response)
 			}
 		})
+	})
+}
+
+async function LoadConfig() {
+	fs.readFile('./config.json', 'utf8', (error, data) => {
+		if (error) {
+			console.log(error);
+			return;
+		}
+		config = JSON.parse(data);
 	})
 }
 
