@@ -72,12 +72,12 @@ await client.on('message', async message => {
 						message.channel.send('```diff\n+ set prompt```')
 						return;
 					case "admin":
-						config.admin_only = commands[2]
-						message.channel.send('```diff\n+ set admin_only```')
+						config.admin_only = !config.admin_only
+						message.channel.send('```diff\n+ set admin_only to ```' + config.admin_only)
 						return;
 					case "date":
-						config.supply_date = commands[2]
-						message.channel.send('```diff\n+ set supply_date```')
+						config.supply_date = !config.supply_date
+						message.channel.send('```diff\n+ set supply_date to ```' + config.supply_date)
 						return;
 					case "depth":
 						config.reply_depth = commands[2]
