@@ -57,8 +57,21 @@ await client.on('message', async message => {
 		let commands = message.content.substring(2, message.content.length).split(" ");
 
 		switch (commands[0]) {
-			case "set":
-				if (commands[2] == null || commands[2] == undefined) { break; } // nothing after "set"
+			case "toggle": // simple on/off settings
+				switch (commands[1]) {
+					case "admin":
+						config.admin_only = !config.admin_only
+						message.channel.send('```diff\n+ set admin_only to ' + config.admin_only + '```')
+						return;
+					case "date":
+						config.supply_date = !config.supply_date
+						message.channel.send('```diff\n+ set supply_date to ' + config.supply_date + '```')
+						return;
+				}
+				break;
+
+			case "set": // settings which need a value
+				if (commands[2] == null || commands[2] == undefined) { break; } // nothing after first value
 
 				switch (commands[1]) {
 					case "name":
@@ -71,14 +84,6 @@ await client.on('message', async message => {
 						config.prompt = commands.toString().replaceAll(",", " ").replaceAll(/  +/g, " ");
 						message.channel.send('```diff\n+ set prompt```')
 						return;
-					case "admin":
-						config.admin_only = !config.admin_only
-						message.channel.send('```diff\n+ set admin_only to ```' + config.admin_only)
-						return;
-					case "date":
-						config.supply_date = !config.supply_date
-						message.channel.send('```diff\n+ set supply_date to ```' + config.supply_date)
-						return;
 					case "depth":
 						config.reply_depth = commands[2]
 						message.channel.send('```diff\n+ set reply_depth```')
@@ -87,10 +92,12 @@ await client.on('message', async message => {
 						break;
 				}
 				break;
+
 			case "reload":
 				await LoadConfig();
 				message.channel.send('```diff\n+ reloaded config```')
 				return;
+
 			default:
 				break;
 		}
